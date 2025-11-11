@@ -32,9 +32,7 @@ jobs:
         config: auto
         output-format: sarif
         output: semgrep_report.sarif
-      env:
-        SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
-        
+      
     - name: Upload Semgrep SARIF Report (SAST 1)
       uses: actions/upload-artifact@v4
       with:
