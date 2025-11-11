@@ -1,0 +1,68 @@
+name: CI Pipeline (SAST, SCA)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build_and_analyze:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+      
+    - name: Setup Node.js Environment
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20' 
+        cache: 'npm' 
+        
+    - name: Install Dependencies
+      run: npm install
+
+
+    - name: Run Semgrep (SAST)
+      uses: returntocorp/semgrep-action@v1
+      id: semgrep
+      with:
+        config: auto
+        output-format: sarif
+        output: semgrep_report.sarif
+      env:
+        SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+        
+    - name: Upload Semgrep SARIF Report (SAST 1)
+      uses: actions/upload-artifact@v4
+      with:
+        name: semgrep-sast-report
+        path: semgrep_report.sarif
+
+
+    - name: Install Snyk CLI
+      run: npm install -g snyk
+      
+    - name: Run Snyk Analysis (SAST & SCA)
+      run: |
+        snyk code test --json > snyk_sast_report.json || true
+        
+        snyk test --json > snyk_sca_report.json || true
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }} 
+
+    - name: Upload Snyk SAST Report (SAST 2)
+      uses: actions/upload-artifact@v4
+      with:
+        name: snyk-sast-report
+        path: snyk_sast_report.json
+
+    - name: Upload Snyk SCA Report (SCA 1)
+      uses: actions/upload-artifact@v4
+      with:
+        name: snyk-sca-report
+        path: snyk_sca_report.json
+        
+  
